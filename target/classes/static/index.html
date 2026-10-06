@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Расчёт аванса</title>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px;
+    font-family: 'Segoe UI', Inter, 'Helvetica Neue', Arial, sans-serif; color: #fff;
+    background: linear-gradient(135deg, #1e1b4b, #312e81 50%, #6d28d9);
+  }
+  .card {
+    width: 100%; max-width: 400px; padding: 34px; border-radius: 28px;
+    background: rgba(255,255,255,.10); border: 1px solid rgba(255,255,255,.22);
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 24px 60px rgba(0,0,0,.35);
+  }
+  h1 { font-size: 28px; }
+  .subtitle { margin-top: 4px; font-size: 13px; color: rgba(255,255,255,.65); }
+  .view { margin-top: 24px; transition: opacity .45s ease, transform .45s ease; }
+  .view.hidden { opacity: 0; transform: translateY(-16px); pointer-events: none; }
+  .view.gone { display: none; }
+  label { display: block; margin-bottom: 16px; }
+  label span { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 700;
+               text-transform: uppercase; color: rgba(255,255,255,.8); }
+  input {
+    width: 100%; padding: 12px 16px; font-size: 16px; color: #fff; outline: none;
+    border-radius: 14px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.12);
+    transition: border-color .2s, background .2s, box-shadow .2s;
+  }
+  input::placeholder { color: rgba(255,255,255,.4); }
+  input:focus { border-color: #c4b5fd; background: rgba(255,255,255,.18); box-shadow: 0 0 14px rgba(196,181,253,.55); }
+  .error { min-height: 18px; margin-bottom: 8px; font-size: 12px; color: #fda4af; }
+  button {
+    width: 100%; padding: 13px; font-size: 15px; font-weight: 700; color: #fff; cursor: pointer;
+    border: 0; border-radius: 14px; transition: transform .1s, filter .2s, background .2s;
+  }
+  button:active { transform: scale(.98); }
+  .primary { background: linear-gradient(90deg, #8b5cf6, #ec4899); }
+  .primary:hover { filter: brightness(1.12); }
+  .primary:disabled { opacity: .6; cursor: wait; }
+  .ghost { margin-top: 22px; font-weight: 500; font-size: 14px; background: transparent;
+           border: 1px solid rgba(255,255,255,.35); color: rgba(255,255,255,.85); }
+  .ghost:hover { background: rgba(255,255,255,.12); }
+  #result { text-align: center; }
+  #result .caption { font-size: 14px; color: rgba(255,255,255,.7); }
+  #amount { margin: 8px 0 14px; font-size: 44px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  #result .detail { margin-top: 6px; font-size: 14px; color: rgba(255,255,255,.75); }
+</style>
+</head>
+<body>
+<main class="card">
+  <h1>Расчёт аванса</h1>
+  <p class="subtitle" id="subtitle">Введите данные — остальное посчитаем сами</p>
+
+  <div class="view" id="form">
+    <label><span>Оклад, ₽</span>
+      <input id="salary" inputmode="decimal" placeholder="Например, 85 000" autocomplete="off"></label>
+    <label><span>Рабочих дней в месяце</span>
+      <input id="monthDays" inputmode="decimal" placeholder="Например, 22" autocomplete="off"></label>
+    <label><span>Мои отработанные дни</span>
+      <input id="workedDays" inputmode="decimal" placeholder="Например, 11" autocomplete="off"></label>
+    <div class="error" id="error"></div>
+    <button class="primary" id="calc">Рассчитать</button>
+  </div>
+
+  <div class="view hidden gone" id="result">
+    <div class="caption">Аванс к выдаче</div>
+    <div id="amount">0,00 ₽</div>
+    <div class="detail" id="gross"></div>
+    <div class="detail" id="tax"></div>
+    <button class="ghost" id="again">Рассчитать заново</button>
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = v => new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB' }).format(v);
+const num = s => parseFloat(s.replace(/\s/g, '').replace(',', '.'));
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+// разрешаем только цифры, пробел и один разделитель
+['salary', 'monthDays', 'workedDays'].forEach(id => {
+  $(id).addEventListener('input', e => {
+    if (!/^[0-9 ]*([.,][0-9]{0,2})?$/.test(e.target.value))
+      e.target.value = e.target.value.slice(0, -1);
+  });
+  $(id).addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
+});
+$('calc').addEventListener('click', calculate);
+$('again').addEventListener('click', reset);
+
+async function calculate() {
+  const body = {
+    salary: num($('salary').value),
+    monthDays: num($('monthDays').value),
+    workedDays: num($('workedDays').value),
+  };
+  if (Object.values(body).some(isNaN)) { $('error').textContent = 'Заполните все поля числами'; return; }
+
+  $('calc').disabled = true;
+  try {
+    const res = await fetch('/api/calculate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) { $('error').textContent = data.message || 'Ошибка расчёта'; return; }
+
+    $('error').textContent = '';
+    $('gross').textContent = 'Начислено: ' + fmt(data.gross);
+    $('tax').textContent = 'НДФЛ 13%: −' + fmt(data.tax);
+    $('subtitle').textContent = 'Готово! Вот ваш аванс';
+
+    // плавно скрываем поля, показываем результат
+    $('form').classList.add('hidden');
+    await wait(450);
+    $('form').classList.add('gone');
+    $('result').classList.remove('gone');
+    await wait(20);
+    $('result').classList.remove('hidden');
+    countUp(data.net);
+  } catch (e) {
+    $('error').textContent = 'Нет связи с сервером';
+  } finally {
+    $('calc').disabled = false;
+  }
+}
+
+function countUp(target) {
+  const start = performance.now(), dur = 1100;
+  (function tick(now) {
+    const t = Math.min((now - start) / dur, 1);
+    $('amount').textContent = fmt(target * (1 - Math.pow(1 - t, 3)));
+    if (t < 1) requestAnimationFrame(tick);
+  })(start);
+}
+
+async function reset() {
+  $('subtitle').textContent = 'Введите данные — остальное посчитаем сами';
+  $('result').classList.add('hidden');
+  await wait(450);
+  $('result').classList.add('gone');
+  $('form').classList.remove('gone');
+  await wait(20);
+  $('form').classList.remove('hidden');
+}
+</script>
+</body>
+</html>
