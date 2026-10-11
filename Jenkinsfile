@@ -10,7 +10,11 @@ pipeline {
         }
 
         stage('Start') {
-            steps { sh 'java -jar /home/agent/jenkins/workspace/advance_main/target/advance.jar' }
+            steps { sh '''
+                        cp target/advance.jar /opt/salary/advance.jar
+                        sudo systemctl restart advance.service
+                    '''
+            }
         }
     }  
 }
