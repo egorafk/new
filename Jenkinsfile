@@ -11,5 +11,6 @@ pipeline {
 
         stage('Start') {
             steps { sh 'java -jar /home/agent/jenkins/workspave/advance_main/target/advance.jar' }
-        }  
+        }
+    }  
 }
