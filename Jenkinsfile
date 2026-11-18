@@ -1,18 +1,26 @@
 pipeline {
+
     agent any
+
+    parameters {
+        string(name: 'BASE_VERSION', defaultValue: '1.0', description: 'base vesrion')
+    }
+
     environment {
           JAVA_HOME = "/usr/lib/jvm/java-17-openjdk-amd64"
           PATH = "${env.JAVA_HOME}/bin:${env.PATH}"
+          VERSION = "${params.BASE_VERSION}.${env.BUILD_NUMBER}"
     }
+
     stages {
         stage('Build') {
-            steps { sh 'mvn -B -ntp clean package'}
+            steps { sh 'mvn -B -ntp -Drevision=$VERSION clean package'}
         }
 
         stage("SonarQube testing") {
             steps {
                 withSonarQubeEnv('sonar') {
-                    sh 'mvn -B -ntp org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=advance'
+                    sh 'mvn -B -ntp -Drevision=$VERSION org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=advance'
                 }
              }
           }
@@ -24,12 +32,21 @@ pipeline {
                          }
                     }
             }
-            
-        stage('Start') {
-            steps { sh '''
-                        cp target/advance.jar /opt/salary/advance.jar
-                        sudo systemctl restart advance.service
-                    '''
+
+        stage("Push to nexus") {
+             steps {
+                   withCredentials(
+                      [usernamePassword( 
+                         credentialsId: 'nexus-credentials',
+                         usernameVariable: 'NEXUS_USER',
+                         passwordVariable: 'NEXUS_PASSWORD'
+                      )
+                   ])
+                    {
+                     withMaven(mavenSettingsConfig: 'nexus-settings') {
+                         sh 'mvn -B -ntp -Drevision=$VERSION deploy -DskipTests'
+                         }
+                       }
             }
         }
     }  
