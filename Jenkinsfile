@@ -14,13 +14,13 @@ pipeline {
 
     stages {
         stage('Build') {
-            steps { sh 'mvn -B -ntp -Drevision=$VERSION clean package'}
+            steps { sh 'mvn -B -ntp -q -Drevision=$VERSION clean package'}
         }
 
         stage("SonarQube testing") {
             steps {
                 withSonarQubeEnv('sonar') {
-                    sh 'mvn -B -ntp -Drevision=$VERSION org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=advance'
+                    sh 'mvn -B -ntp -q -Drevision=$VERSION org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=advance'
                 }
              }
           }
@@ -44,7 +44,7 @@ pipeline {
                    ])
                     {
                      withMaven(mavenSettingsConfig: 'nexus-settings') {
-                         sh 'mvn -B -ntp -Drevision=$VERSION deploy -DskipTests'
+                         sh 'mvn -B -ntp -q -Drevision=$VERSION deploy -DskipTests'
                          }
                        }
             }
