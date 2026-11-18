@@ -44,10 +44,32 @@ pipeline {
                    ])
                     {
                      withMaven(mavenSettingsConfig: 'nexus-settings') {
-                         sh 'mvn -B -ntp -q -Drevision=$VERSION deploy -DskipTests'
+                         sh 'mvn -B -ntp -Drevision=$VERSION deploy -DskipTests'
                          }
-                       }
+                    }
+               }
+          }
+        
+        stage("Deploy app to host") {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                       credentialsId: 'nexus-credentials',
+                       usernameVariable: 'NEXUS_USER',
+                       passwordVariable: 'NEXUS_PASSWORD'
+                    )
+                  ]) {
+                       sh '''set -e
+                             set +x
+                             curl -fsSL -u "$NEXUS_USER:$NEXUS_PASSWORD" \
+                             -o /opt/salary/advance.jar.tmp \
+                             "http://192.168.0.124:8081/repository/maven-releases/app/advance-web/$VERSION/advance-web-$VERSION.jar"
+                             mv /opt/salary/advance.jar.tmp /opt/salary/advance.jar
+                             sudo -n systemctl restart advance.service
+                             sudo -n systemctl is-active --quiet advance.service
+                          '''
+                     }
+
+                  }  
             }
-        }
-    }  
 }
