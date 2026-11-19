@@ -3,7 +3,7 @@ pipeline {
     agent any
 
     parameters {
-        string(name: 'BASE_VERSION', defaultValue: '1.0', description: 'base vesrion')
+        string(name: 'BASE_VERSION', defaultValue: '2.0', description: 'base vesrion')
     }
 
     environment {

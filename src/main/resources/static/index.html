@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Расчёт аванса</title>
+<title>Расчёт аванса — Neon V3</title>
 <style>
   * { box-sizing: border-box; margin: 0; }
   body {
@@ -68,7 +68,79 @@
   .version { position: fixed; bottom: 14px; left: 0; right: 0; z-index: 1; text-align: center;
              font-size: 12px; letter-spacing: .12em; color: rgba(255,255,255,.55); }
 
+  /* V3: aurora / neon design */
+  body { overflow-x: hidden; overflow-y: auto; background: linear-gradient(125deg,#070b25,#191044 42%,#092f50 76%,#170b38); background-size: 350% 350%; animation: shift 14s ease infinite; }
+  body::before { content:""; position:fixed; inset:0; pointer-events:none; opacity:.19; z-index:0;
+    background-image:linear-gradient(rgba(255,255,255,.13) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.13) 1px,transparent 1px);
+    background-size:56px 56px; mask-image:linear-gradient(to bottom,transparent,#000 55%,transparent); }
+  .b1 { background:#8b5cf6; opacity:.65; }
+  .b2 { background:#0ea5e9; opacity:.65; }
+  .b3 { background:#f472b6; opacity:.4; }
+  .card { max-width:440px; padding:36px; border-radius:30px; overflow:hidden;
+    background:rgba(12,17,48,.68); border:1px solid rgba(165,180,252,.35);
+    box-shadow:0 30px 100px rgba(3,5,26,.65),0 0 60px rgba(139,92,246,.15);
+    animation: cardEnter .85s cubic-bezier(.2,.9,.25,1) both;
+    transition:transform .18s ease-out,box-shadow .25s ease; }
+  .card::before { content:""; position:absolute; inset:0 0 auto; height:2px;
+    background:linear-gradient(90deg,transparent,#a78bfa,#22d3ee,#f472b6,transparent);
+    background-size:200% 100%; animation:glowLine 5s linear infinite; }
+  .card::after { content:""; position:absolute; width:210px; height:210px; right:-125px; top:-125px;
+    border-radius:50%; background:rgba(167,139,250,.15); filter:blur(35px); pointer-events:none; }
+  @keyframes glowLine { to { background-position:200% 0; } }
+  @keyframes cardEnter { from { opacity:0; transform:translateY(28px) scale(.95); } to { opacity:1; transform:translateY(0) scale(1); } }
+  .eyebrow { display:inline-flex; align-items:center; gap:8px; padding:7px 12px; margin-bottom:20px;
+    border:1px solid rgba(167,139,250,.35); background:rgba(139,92,246,.14); border-radius:999px;
+    font-size:10px; font-weight:800; letter-spacing:.17em; color:#ddd6fe; }
+  .eyebrow .live { width:7px; height:7px; border-radius:50%; background:#22d3ee;
+    box-shadow:0 0 0 4px rgba(34,211,238,.12),0 0 14px #22d3ee; animation:pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity:.45; transform:scale(.75); } }
+  h1 { font-size:clamp(27px,6vw,34px); letter-spacing:-.045em; line-height:1.12;
+    background:linear-gradient(100deg,#fff 20%,#c4b5fd 60%,#67e8f9); background-clip:text; -webkit-background-clip:text; color:transparent; }
+  .subtitle { margin-top:10px; line-height:1.55; color:#b8c3e6; }
+  label span { color:#c4b5fd; font-size:11px; letter-spacing:.08em; }
+  input { background:rgba(11,18,52,.8); border-color:rgba(165,180,252,.22); padding:15px 17px;
+    transition:transform .2s,border-color .2s,box-shadow .2s,background .2s; }
+  input:focus { border-color:#a78bfa; background:rgba(30,26,76,.95); transform:translateY(-2px);
+    box-shadow:0 0 0 3px rgba(139,92,246,.16),0 0 24px rgba(139,92,246,.2); }
+  .primary { position:relative; overflow:hidden; padding:16px; color:#0a0b28;
+    background:linear-gradient(105deg,#a78bfa,#67e8f9 55%,#f0abfc); background-size:200% 100%;
+    box-shadow:0 8px 30px rgba(139,92,246,.28); transition:transform .2s,box-shadow .2s,background-position .4s; }
+  .primary::after { content:""; position:absolute; inset:0; transform:translateX(-130%) skewX(-20deg);
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent); transition:transform .6s; }
+  .primary:hover { transform:translateY(-3px); box-shadow:0 14px 36px rgba(139,92,246,.4); background-position:100% 0; }
+  .primary:hover::after { transform:translateX(130%) skewX(-20deg); }
+  .primary:disabled { transform:none; }
+  .ghost { border-color:rgba(167,139,250,.5); }
+  .ghost:hover { background:rgba(139,92,246,.17); }
+  #amount { font-size:clamp(34px,8vw,48px); letter-spacing:-.04em; color:#a5f3fc;
+    text-shadow:0 0 30px rgba(34,211,238,.35); }
+  #result.reveal #amount { animation:resultPop .65s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes resultPop { from { transform:scale(.7); opacity:.2; } to { transform:scale(1); opacity:1; } }
+  .version { position:relative; padding:14px 0 0; bottom:auto; font-size:11px; letter-spacing:.18em; color:#a5b4fc; }
+  .version strong { color:#67e8f9; }
+  .spark { position:fixed; pointer-events:none; z-index:4; width:7px; height:7px; border-radius:2px;
+    background:var(--spark-color,#a78bfa); box-shadow:0 0 10px var(--spark-color,#a78bfa);
+    animation:sparkFly .85s ease-out forwards; }
+  @keyframes sparkFly { to { transform:translate(var(--sx),var(--sy)) rotate(280deg) scale(.1); opacity:0; } }
+  @media (max-width:480px) { .card { padding:26px 22px; } body { padding:16px; } }
   @media (prefers-reduced-motion: reduce) { *, body { animation: none !important; } }
+
+  /* Поля появляются по очереди в течение первых двух секунд */
+  @keyframes fieldEntrance {
+    from { opacity: 0; transform: translateY(24px); filter: blur(7px); }
+    to { opacity: 1; transform: translateY(0); filter: blur(0); }
+  }
+  #form > label, #form > .error, #form > #calc {
+    animation: fieldEntrance .85s cubic-bezier(.2,.8,.2,1) both;
+  }
+  #form > label:nth-of-type(1) { animation-delay: .25s; }
+  #form > label:nth-of-type(2) { animation-delay: .58s; }
+  #form > label:nth-of-type(3) { animation-delay: .91s; }
+  #form > .error { animation-delay: 1.18s; }
+  #form > #calc { animation-delay: 1.15s; }
+  @media (prefers-reduced-motion: reduce) {
+    #form > label, #form > .error, #form > #calc { animation: none !important; }
+  }
 </style>
 </head>
 <body>
@@ -100,7 +172,6 @@
   </div>
 </main>
 
-<div class="version">v2</div>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -157,6 +228,10 @@ async function calculate() {
     await wait(20);
     $('result').classList.remove('hidden');
     countUp(data.net);
+    $('result').classList.remove('reveal');
+    void $('result').offsetWidth;
+    $('result').classList.add('reveal');
+    celebrate();
   } catch (e) {
     $('error').textContent = 'Нет связи с сервером';
   } finally {
@@ -173,8 +248,40 @@ function countUp(target) {
   })(start);
 }
 
+function celebrate() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const rect = $('amount').getBoundingClientRect();
+  const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+  const colors = ['#a78bfa','#67e8f9','#f0abfc','#fff'];
+  for (let i = 0; i < 26; i++) {
+    const dot = document.createElement('span');
+    dot.className = 'spark';
+    const angle = (i / 26) * Math.PI * 2;
+    const dist = 65 + Math.random() * 130;
+    dot.style.left = cx + 'px'; dot.style.top = cy + 'px';
+    dot.style.setProperty('--sx', Math.cos(angle) * dist + 'px');
+    dot.style.setProperty('--sy', Math.sin(angle) * dist + 'px');
+    dot.style.setProperty('--spark-color', colors[i % colors.length]);
+    document.body.appendChild(dot);
+    dot.addEventListener('animationend', () => dot.remove(), {once:true});
+  }
+}
+
+// Subtle cursor-reactive glow on the card
+if (window.matchMedia('(pointer:fine) and (prefers-reduced-motion: no-preference)').matches) {
+  const card = document.querySelector('.card');
+  card.addEventListener('pointermove', e => {
+    const r = card.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - .5;
+    const y = (e.clientY - r.top) / r.height - .5;
+    card.style.transform = `perspective(900px) rotateY(${x * 3}deg) rotateX(${-y * 3}deg)`;
+  });
+  card.addEventListener('pointerleave', () => { card.style.transform = ''; });
+}
+
 async function reset() {
   $('subtitle').textContent = 'Введите данные — остальное посчитаем сами';
+  $('result').classList.remove('reveal');
   $('result').classList.add('hidden');
   await wait(450);
   $('result').classList.add('gone');
