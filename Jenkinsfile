@@ -61,6 +61,13 @@ pipeline {
                   ]) {
                        sh '''set -e
                              set +x
+
+                             if [ -n "$NEXUS_PASSWORD" ]; then
+                                   echo "NEXUS_PASSWORD: SET"
+                             else
+                                   echo "NEXUS_PASSWORD: EMPTY"
+                             fi
+
                              curl -v -I -u "$NEXUS_USER:$NEXUS_PASSWORD" \
                              -o /opt/salary/advance.jar.tmp \
                              "http://192.168.0.124:8081/repository/maven-releases/app/advance-web/$VERSION/advance-web-$VERSION.jar"
