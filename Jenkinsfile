@@ -15,15 +15,28 @@ pipeline {
     stages {
         stage('Build') {
             steps { sh 'mvn -B -ntp -q -Drevision=$VERSION clean package'}
-        }
+                       }
 
         stage("SonarQube testing") {
-            steps {
+            steps { 
+                withVault(
+                    configuration: [
+                        vaultUrl: 'http://192.168.0.124:8200',
+                        vaultCredentialId: 'vault-approle',
+                        engineVersion: 2
+                                   ],
+                    vaultSecrets: [[
+                        path: 'secret/jenkins/sonarqube',
+                        secretValues: [
+                            [envVar: 'SONAR_TOKEN', vaultKey: 'token']
+                                      ]
+                                  ]]
+                         ) {
                 withSonarQubeEnv('sonar') {
-                    sh 'mvn -B -ntp -q -Drevision=$VERSION org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=advance'
-                }
-             }
-          }
+                    sh 'mvn -B -ntp -q -Drevision=$VERSION org.sonarsource.scanner.maven:sonar-maven-plugin:sonar                                                                       -Dsonar.projectKey=advance -Dsonar.token="$SONAR_TOKEN"'
+                                          }
+                           }     
+                  }
 
         stage("Quality Gate") {
              steps {
@@ -35,38 +48,47 @@ pipeline {
 
         stage("Push to nexus") {
              steps {
-                   withCredentials(
-                      [usernamePassword( 
-                         credentialsId: 'nexus-credentials',
-                         usernameVariable: 'NEXUS_USER',
-                         passwordVariable: 'NEXUS_PASSWORD'
-                      )
-                   ])
+                   withVault(
+                      configuration: [
+                         vaultUrl: 'http://192.168.0.124:8200',
+                         vaultCredentialId: 'vault-approle',
+                         engineVersion: 2
+                                     ],
+                      vaultSecrets: [[
+                         path: 'secret/jenkins/nexus',
+                         secretValues: [
+                             [envVar: 'NEXUS_USER', vaultKey: 'user'],
+                             [envVar: 'NEXUS_PASSWORD', vaultKey: 'password']
+                                       ]
+                                    ]]
+                            ) 
                     {
-                     withMaven(mavenSettingsConfig: 'nexus-settings') {
-                         sh 'mvn -B -ntp -Drevision=$VERSION deploy -DskipTests'
-                         }
+                      withMaven(mavenSettingsConfig: 'nexus-settings') {
+                            sh 'mvn -B -ntp -Drevision=$VERSION deploy -DskipTests'
+                        }
                     }
-               }
-          }
+                }
+             }
         
         stage("Deploy app to host") {
             steps {
-                withCredentials([
-                    usernamePassword(
-                       credentialsId: 'nexus-credentials',
-                       usernameVariable: 'NEXUS_USER',
-                       passwordVariable: 'NEXUS_PASSWORD'
-                    )
-                  ]) {
+                withVault(
+                    configuration: [
+                       vaultUrl: 'http://192.168.0.124:8200',
+                       vaultCredentialId: 'vault-approle',
+                       engineVersion: 2
+                                   ],
+                    vaultSecrets: [[
+                       path: 'secret/jenkins/nexus',
+                       secretValues: [
+                           [envVar: 'NEXUS_USER', vaultKey: 'username'],
+                           [envVar: 'NEXUS_PASSWORD', vaultKey: 'password']
+                                     ]
+                                  ]]
+                         ) 
+                    {
                        sh '''set -e
                              set +x
-
-                             if [ -n "$NEXUS_PASSWORD" ]; then
-                                   echo "NEXUS_PASSWORD: SET"
-                             else
-                                   echo "NEXUS_PASSWORD: EMPTY"
-                             fi
 
                              curl -fsSL -u "$NEXUS_USER:$NEXUS_PASSWORD" \
                              -o /opt/salary/advance.jar.tmp \
@@ -75,9 +97,9 @@ pipeline {
                              sudo -n systemctl restart advance.service
                              sudo -n systemctl is-active --quiet advance.service
                           '''
-                     }
+                    }
 
-                  }  
-            }
-   }
+                }  
+           }
+     }
 }
