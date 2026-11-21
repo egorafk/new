@@ -82,7 +82,7 @@ pipeline {
                     vaultSecrets: [[
                        path: 'secret/jenkins/nexus',
                        secretValues: [
-                           [envVar: 'NEXUS_USER', vaultKey: 'username'],
+                           [envVar: 'NEXUS_USER', vaultKey: 'user'],
                            [envVar: 'NEXUS_PASSWORD', vaultKey: 'password']
                                      ]
                                   ]]
